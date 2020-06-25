@@ -9,6 +9,8 @@ function getValues(scale) {
 }
 
 describe('Category scale tests', function() {
+	describe('auto', jasmine.fixture.specs('scale.category'));
+
 	it('Should register the constructor with the scale service', function() {
 		var Constructor = Chart.scaleService.getScaleConstructor('category');
 		expect(Constructor).not.toBe(undefined);
@@ -19,6 +21,8 @@ describe('Category scale tests', function() {
 		var defaultConfig = Chart.scaleService.getScaleDefaults('category');
 		expect(defaultConfig).toEqual({
 			display: true,
+			reverse: false,
+			beginAtZero: false,
 
 			gridLines: {
 				color: 'rgba(0,0,0,0.1)',
@@ -32,16 +36,13 @@ describe('Category scale tests', function() {
 				borderDash: [],
 				borderDashOffset: 0.0
 			},
-			position: 'bottom',
 			offset: false,
 			scaleLabel: Chart.defaults.scale.scaleLabel,
 			ticks: {
-				beginAtZero: false,
 				minRotation: 0,
 				maxRotation: 50,
 				mirror: false,
 				padding: 0,
-				reverse: false,
 				display: true,
 				callback: defaultConfig.ticks.callback, // make this nicer, then check explicitly below
 				autoSkip: true,
@@ -49,6 +50,8 @@ describe('Category scale tests', function() {
 				labelOffset: 0,
 				minor: {},
 				major: {},
+				lineWidth: 0,
+				strokeStyle: '',
 			}
 		});
 
@@ -56,32 +59,6 @@ describe('Category scale tests', function() {
 		expect(defaultConfig.ticks.callback).toEqual(jasmine.any(Function));
 	});
 
-	it('Should generate ticks from the data labels', function() {
-		var scaleID = 'myScale';
-
-		var mockData = {
-			datasets: [{
-				yAxisID: scaleID,
-				data: [10, 5, 0, 25, 78]
-			}],
-			labels: ['tick1', 'tick2', 'tick3', 'tick4', 'tick5']
-		};
-
-		var config = Chart.helpers.clone(Chart.scaleService.getScaleDefaults('category'));
-		var Constructor = Chart.scaleService.getScaleConstructor('category');
-		var scale = new Constructor({
-			ctx: {},
-			options: config,
-			chart: {
-				data: mockData
-			},
-			id: scaleID
-		});
-
-		scale.determineDataLimits();
-		scale.ticks = scale.buildTicks();
-		expect(getValues(scale)).toEqual(mockData.labels);
-	});
 
 	it('Should generate ticks from the data xLabels', function() {
 		var scaleID = 'myScale';
@@ -95,16 +72,17 @@ describe('Category scale tests', function() {
 		};
 
 		var config = Chart.helpers.clone(Chart.scaleService.getScaleDefaults('category'));
+		config.position = 'bottom';
 		var Constructor = Chart.scaleService.getScaleConstructor('category');
 		var scale = new Constructor({
 			ctx: {},
-			options: config,
 			chart: {
 				data: mockData
 			},
 			id: scaleID
 		});
 
+		scale.init(config);
 		scale.determineDataLimits();
 		scale.ticks = scale.buildTicks();
 		expect(getValues(scale)).toEqual(mockData.xLabels);
@@ -126,13 +104,13 @@ describe('Category scale tests', function() {
 		var Constructor = Chart.scaleService.getScaleConstructor('category');
 		var scale = new Constructor({
 			ctx: {},
-			options: config,
 			chart: {
 				data: mockData
 			},
 			id: scaleID
 		});
 
+		scale.init(config);
 		scale.determineDataLimits();
 		scale.ticks = scale.buildTicks();
 		expect(getValues(scale)).toEqual(mockData.yLabels);
@@ -147,11 +125,10 @@ describe('Category scale tests', function() {
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'x',
+					x: {
 						type: 'category',
 						labels: labels
-					}]
+					}
 				}
 			}
 		});
@@ -165,28 +142,26 @@ describe('Category scale tests', function() {
 			type: 'line',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
+					xAxisID: 'x',
+					yAxisID: 'y',
 					data: [10, 5, 0, 25, 78]
 				}],
 				labels: ['tick1', 'tick2', 'tick3', 'tick4', 'tick5']
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'category',
 						position: 'bottom'
-					}],
-					yAxes: [{
-						id: 'yScale0',
+					},
+					y: {
 						type: 'linear'
-					}]
+					}
 				}
 			}
 		});
 
-		var scale = chart.scales.xScale0;
+		var scale = chart.scales.x;
 
 		expect(scale.getLabelForValue(1)).toBe('tick2');
 	});
@@ -196,28 +171,26 @@ describe('Category scale tests', function() {
 			type: 'line',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
+					xAxisID: 'x',
+					yAxisID: 'y',
 					data: [10, 5, 0, 25, 78]
 				}],
 				labels: ['tick1', 'tick2', 'tick3', 'tick4', 'tick_last']
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'category',
 						position: 'bottom'
-					}],
-					yAxes: [{
-						id: 'yScale0',
+					},
+					y: {
 						type: 'linear'
-					}]
+					}
 				}
 			}
 		});
 
-		var xScale = chart.scales.xScale0;
+		var xScale = chart.scales.x;
 		expect(xScale.getPixelForValue(0)).toBeCloseToPixel(23 + 6); // plus lineHeight
 		expect(xScale.getValueForPixel(23)).toBe(0);
 
@@ -239,28 +212,26 @@ describe('Category scale tests', function() {
 			type: 'line',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
+					xAxisID: 'x',
+					yAxisID: 'y',
 					data: [10, 5, 0, 25, 78]
 				}],
 				labels: ['tick1', 'tick2', 'tick3', 'tick4', 'tick_last']
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'category',
 						position: 'bottom'
-					}],
-					yAxes: [{
-						id: 'yScale0',
+					},
+					y: {
 						type: 'linear'
-					}]
+					}
 				}
 			}
 		});
 
-		var xScale = chart.scales.xScale0;
+		var xScale = chart.scales.x;
 		expect(xScale.getPixelForValue('tick1')).toBeCloseToPixel(23 + 6); // plus lineHeight
 	});
 
@@ -269,32 +240,28 @@ describe('Category scale tests', function() {
 			type: 'line',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
+					xAxisID: 'x',
+					yAxisID: 'y',
 					data: [10, 5, 0, 25, 78]
 				}],
 				labels: ['tick1', 'tick2', 'tick3', 'tick4', 'tick_last']
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'category',
 						position: 'bottom',
-						ticks: {
-							min: 'tick2',
-							max: 'tick4'
-						}
-					}],
-					yAxes: [{
-						id: 'yScale0',
+						min: 'tick2',
+						max: 'tick4'
+					},
+					y: {
 						type: 'linear'
-					}]
+					}
 				}
 			}
 		});
 
-		var xScale = chart.scales.xScale0;
+		var xScale = chart.scales.x;
 		expect(xScale.getPixelForValue(1)).toBeCloseToPixel(23 + 6); // plus lineHeight
 		expect(xScale.getPixelForValue(3)).toBeCloseToPixel(496);
 
@@ -310,8 +277,8 @@ describe('Category scale tests', function() {
 			type: 'line',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
+					xAxisID: 'x',
+					yAxisID: 'y',
 					data: ['3', '5', '1', '4', '2']
 				}],
 				labels: ['tick1', 'tick2', 'tick3', 'tick4', 'tick5'],
@@ -319,21 +286,19 @@ describe('Category scale tests', function() {
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'category',
 						position: 'bottom',
-					}],
-					yAxes: [{
-						id: 'yScale0',
+					},
+					y: {
 						type: 'category',
 						position: 'left'
-					}]
+					}
 				}
 			}
 		});
 
-		var yScale = chart.scales.yScale0;
+		var yScale = chart.scales.y;
 		expect(yScale.getPixelForValue(0)).toBeCloseToPixel(32);
 		expect(yScale.getValueForPixel(257)).toBe(2);
 
@@ -355,8 +320,8 @@ describe('Category scale tests', function() {
 			type: 'line',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
+					xAxisID: 'x',
+					yAxisID: 'y',
 					data: ['3', '5', '1', '4', '2']
 				}],
 				labels: ['tick1', 'tick2', 'tick3', 'tick4', 'tick5'],
@@ -364,25 +329,21 @@ describe('Category scale tests', function() {
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'category',
 						position: 'bottom',
-					}],
-					yAxes: [{
-						id: 'yScale0',
+					},
+					y: {
 						type: 'category',
 						position: 'left',
-						ticks: {
-							min: '2',
-							max: '4'
-						}
-					}]
+						min: '2',
+						max: '4'
+					}
 				}
 			}
 		});
 
-		var yScale = chart.scales.yScale0;
+		var yScale = chart.scales.y;
 
 		expect(yScale.getPixelForValue(1)).toBeCloseToPixel(32);
 		expect(yScale.getPixelForValue(3)).toBeCloseToPixel(482);
@@ -399,8 +360,8 @@ describe('Category scale tests', function() {
 			type: 'line',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
+					xAxisID: 'x',
+					yAxisID: 'y',
 					data: [
 						{x: 0, y: 10},
 						{x: 1, y: 5},
@@ -413,20 +374,18 @@ describe('Category scale tests', function() {
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'category',
 						position: 'bottom'
-					}],
-					yAxes: [{
-						id: 'yScale0',
+					},
+					y: {
 						type: 'linear'
-					}]
+					}
 				}
 			}
 		});
 
-		var xScale = chart.scales.xScale0;
+		var xScale = chart.scales.x;
 		expect(xScale.getPixelForValue(0)).toBeCloseToPixel(29);
 		expect(xScale.getPixelForValue(3)).toBeCloseToPixel(506);
 		expect(xScale.getPixelForValue(4)).toBeCloseToPixel(664);
@@ -437,8 +396,8 @@ describe('Category scale tests', function() {
 			type: 'line',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
+					xAxisID: 'x',
+					yAxisID: 'y',
 					data: [
 						{x: 0, y: 2},
 						{x: 1, y: 4},
@@ -452,21 +411,19 @@ describe('Category scale tests', function() {
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'category',
 						position: 'bottom'
-					}],
-					yAxes: [{
-						id: 'yScale0',
+					},
+					y: {
 						type: 'category',
 						position: 'left'
-					}]
+					}
 				}
 			}
 		});
 
-		var yScale = chart.scales.yScale0;
+		var yScale = chart.scales.y;
 		expect(yScale.getPixelForValue(0)).toBeCloseToPixel(32);
 		expect(yScale.getPixelForValue(4)).toBeCloseToPixel(481);
 	});
@@ -476,8 +433,8 @@ describe('Category scale tests', function() {
 			type: 'bar',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
+					xAxisID: 'x',
+					yAxisID: 'y',
 					data: [
 						{x: 0, y: 10},
 						{x: 1, y: 5},
@@ -490,20 +447,18 @@ describe('Category scale tests', function() {
 			},
 			options: {
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'category',
 						position: 'bottom'
-					}],
-					yAxes: [{
-						id: 'yScale0',
+					},
+					y: {
 						type: 'linear'
-					}]
+					}
 				}
 			}
 		});
 
-		var xScale = chart.scales.xScale0;
+		var xScale = chart.scales.x;
 		expect(xScale.getPixelForValue(0)).toBeCloseToPixel(89);
 		expect(xScale.getPixelForValue(3)).toBeCloseToPixel(449);
 		expect(xScale.getPixelForValue(4)).toBeCloseToPixel(569);
@@ -511,11 +466,9 @@ describe('Category scale tests', function() {
 
 	it('Should get the correct pixel for an object value in a horizontal bar chart', function() {
 		var chart = window.acquireChart({
-			type: 'horizontalBar',
+			type: 'bar',
 			data: {
 				datasets: [{
-					xAxisID: 'xScale0',
-					yAxisID: 'yScale0',
 					data: [
 						{x: 10, y: 0},
 						{x: 5, y: 1},
@@ -527,21 +480,20 @@ describe('Category scale tests', function() {
 				labels: [0, 1, 2, 3]
 			},
 			options: {
+				indexAxis: 'y',
 				scales: {
-					xAxes: [{
-						id: 'xScale0',
+					x: {
 						type: 'linear',
 						position: 'bottom'
-					}],
-					yAxes: [{
-						id: 'yScale0',
+					},
+					y: {
 						type: 'category'
-					}]
+					}
 				}
 			}
 		});
 
-		var yScale = chart.scales.yScale0;
+		var yScale = chart.scales.y;
 		expect(yScale.getPixelForValue(0)).toBeCloseToPixel(88);
 		expect(yScale.getPixelForValue(3)).toBeCloseToPixel(426);
 		expect(yScale.getPixelForValue(4)).toBeCloseToPixel(538);

@@ -1,117 +1,44 @@
-'use strict';
+import {isNumber} from '../helpers/helpers.math';
 
-const color = require('chartjs-color');
-const helpers = require('../helpers/index');
+export default class Element {
 
-function interpolate(start, view, model, ease) {
-	var keys = Object.keys(model);
-	var i, ilen, key, actual, origin, target, type, c0, c1;
-
-	for (i = 0, ilen = keys.length; i < ilen; ++i) {
-		key = keys[i];
-
-		target = model[key];
-
-		// if a value is added to the model after pivot() has been called, the view
-		// doesn't contain it, so let's initialize the view to the target value.
-		if (!Object.prototype.hasOwnProperty.call(view, key)) {
-			view[key] = target;
-		}
-
-		actual = view[key];
-
-		if (actual === target || key[0] === '_') {
-			continue;
-		}
-
-		if (!Object.prototype.hasOwnProperty.call(start, key)) {
-			start[key] = actual;
-		}
-
-		origin = start[key];
-
-		type = typeof target;
-
-		if (type === typeof origin) {
-			if (type === 'string') {
-				c0 = color(origin);
-				if (c0.valid) {
-					c1 = color(target);
-					if (c1.valid) {
-						view[key] = c1.mix(c0, ease).rgbString();
-						continue;
-					}
-				}
-			} else if (helpers.isFinite(origin) && helpers.isFinite(target)) {
-				view[key] = origin + (target - origin) * ease;
-				continue;
-			}
-		}
-
-		view[key] = target;
-	}
-}
-
-class Element {
-
-	constructor(configuration) {
-		helpers.extend(this, configuration);
-		this.initialize.apply(this, arguments);
+	constructor() {
+		this.x = undefined;
+		this.y = undefined;
+		this.active = false;
+		this.options = undefined;
+		this.$animations = undefined;
 	}
 
-	initialize() {
-		this.hidden = false;
-	}
-
-	pivot() {
-		var me = this;
-		if (!me._view) {
-			me._view = helpers.extend({}, me._model);
-		}
-		me._start = {};
-		return me;
-	}
-
-	transition(ease) {
-		var me = this;
-		var model = me._model;
-		var start = me._start;
-		var view = me._view;
-
-		// No animation -> No Transition
-		if (!model || ease === 1) {
-			// _model has to be cloned to _view
-			// Otherwise, when _model properties are set on hover, _view.* is also set to the same value, and hover animation doesn't occur
-			me._view = helpers.extend({}, model);
-			me._start = null;
-			return me;
-		}
-
-		if (!view) {
-			view = me._view = {};
-		}
-
-		if (!start) {
-			start = me._start = {};
-		}
-
-		interpolate(start, view, model, ease);
-
-		return me;
-	}
-
-	tooltipPosition() {
-		return {
-			x: this._model.x,
-			y: this._model.y
-		};
+	/**
+	 * @param {boolean} [useFinalPosition]
+	 */
+	tooltipPosition(useFinalPosition) {
+		const {x, y} = this.getProps(['x', 'y'], useFinalPosition);
+		return {x, y};
 	}
 
 	hasValue() {
-		return helpers.isNumber(this._model.x) && helpers.isNumber(this._model.y);
+		return isNumber(this.x) && isNumber(this.y);
+	}
+
+	/**
+	 * Gets the current or final value of each prop. Can return extra properties (whole object).
+	 * @param {string[]} props - properties to get
+	 * @param {boolean} [final] - get the final value (animation target)
+	 * @return {object}
+	 */
+	getProps(props, final) {
+		const me = this;
+		const anims = this.$animations;
+		if (!final || !anims) {
+			// let's not create an object, if not needed
+			return me;
+		}
+		const ret = {};
+		props.forEach(prop => {
+			ret[prop] = anims[prop] && anims[prop].active ? anims[prop]._to : me[prop];
+		});
+		return ret;
 	}
 }
-
-Element.extend = helpers.inherits;
-
-module.exports = Element;

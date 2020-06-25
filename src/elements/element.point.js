@@ -1,92 +1,87 @@
-'use strict';
+import defaults from '../core/core.defaults';
+import Element from '../core/core.element';
+import {_isPointInArea, drawPoint} from '../helpers/helpers.canvas';
 
-const defaults = require('../core/core.defaults');
-const Element = require('../core/core.element');
-const helpers = require('../helpers/index');
-
-const valueOrDefault = helpers.valueOrDefault;
-
-const defaultColor = defaults.global.defaultColor;
-
-defaults._set('global', {
-	elements: {
-		point: {
-			radius: 3,
-			pointStyle: 'circle',
-			backgroundColor: defaultColor,
-			borderColor: defaultColor,
-			borderWidth: 1,
-			// Hover
-			hitRadius: 1,
-			hoverRadius: 4,
-			hoverBorderWidth: 1
-		}
-	}
+const scope = 'elements.point';
+defaults.set(scope, {
+	borderWidth: 1,
+	hitRadius: 1,
+	hoverBorderWidth: 1,
+	hoverRadius: 4,
+	pointStyle: 'circle',
+	radius: 3
 });
+
+defaults.route(scope, ['backgroundColor', 'borderColor'], '', 'color');
 
 class Point extends Element {
 
-	constructor(props) {
-		super(props);
+	constructor(cfg) {
+		super();
+
+		this.options = undefined;
+		this.skip = undefined;
+		this.stop = undefined;
+
+		if (cfg) {
+			Object.assign(this, cfg);
+		}
 	}
 
-	inRange(mouseX, mouseY) {
-		var vm = this._view;
-		return vm ? ((Math.pow(mouseX - vm.x, 2) + Math.pow(mouseY - vm.y, 2)) < Math.pow(vm.hitRadius + vm.radius, 2)) : false;
+	inRange(mouseX, mouseY, useFinalPosition) {
+		const options = this.options;
+		const {x, y} = this.getProps(['x', 'y'], useFinalPosition);
+		return ((Math.pow(mouseX - x, 2) + Math.pow(mouseY - y, 2)) < Math.pow(options.hitRadius + options.radius, 2));
 	}
 
-	inXRange(mouseX) {
-		var vm = this._view;
-		return vm ? (Math.abs(mouseX - vm.x) < vm.radius + vm.hitRadius) : false;
+	inXRange(mouseX, useFinalPosition) {
+		const options = this.options;
+		const {x} = this.getProps(['x'], useFinalPosition);
+
+		return (Math.abs(mouseX - x) < options.radius + options.hitRadius);
 	}
 
-	inYRange(mouseY) {
-		var vm = this._view;
-		return vm ? (Math.abs(mouseY - vm.y) < vm.radius + vm.hitRadius) : false;
+	inYRange(mouseY, useFinalPosition) {
+		const options = this.options;
+		const {y} = this.getProps(['x'], useFinalPosition);
+		return (Math.abs(mouseY - y) < options.radius + options.hitRadius);
 	}
 
-	getCenterPoint() {
-		var vm = this._view;
-		return {
-			x: vm.x,
-			y: vm.y
-		};
+	getCenterPoint(useFinalPosition) {
+		const {x, y} = this.getProps(['x', 'y'], useFinalPosition);
+		return {x, y};
 	}
 
-	tooltipPosition() {
-		var vm = this._view;
-		return {
-			x: vm.x,
-			y: vm.y,
-			padding: vm.radius + vm.borderWidth
-		};
+	size() {
+		const options = this.options || {};
+		const radius = Math.max(options.radius, options.hoverRadius) || 0;
+		const borderWidth = radius && options.borderWidth || 0;
+		return (radius + borderWidth) * 2;
 	}
 
-	draw(chartArea) {
-		var vm = this._view;
-		var ctx = this._ctx;
-		var pointStyle = vm.pointStyle;
-		var rotation = vm.rotation;
-		var radius = vm.radius;
-		var x = vm.x;
-		var y = vm.y;
-		var globalDefaults = defaults.global;
-		var defaultColor = globalDefaults.defaultColor; // eslint-disable-line no-shadow
+	draw(ctx, chartArea) {
+		const me = this;
+		const options = me.options;
 
-		if (vm.skip) {
+		if (me.skip || options.radius <= 0) {
 			return;
 		}
 
 		// Clipping for Points.
-		if (chartArea === undefined || helpers.canvas._isPointInArea(vm, chartArea)) {
-			ctx.strokeStyle = vm.borderColor || defaultColor;
-			ctx.lineWidth = valueOrDefault(vm.borderWidth, globalDefaults.elements.point.borderWidth);
-			ctx.fillStyle = vm.backgroundColor || defaultColor;
-			helpers.canvas.drawPoint(ctx, pointStyle, radius, x, y, rotation);
+		if (chartArea === undefined || _isPointInArea(me, chartArea)) {
+			ctx.strokeStyle = options.borderColor;
+			ctx.lineWidth = options.borderWidth;
+			ctx.fillStyle = options.backgroundColor;
+			drawPoint(ctx, options, me.x, me.y);
 		}
+	}
+
+	getRange() {
+		const options = this.options || {};
+		return options.radius + options.hitRadius;
 	}
 }
 
-Point.prototype._type = 'point';
+Point._type = 'point';
 
-module.exports = Point;
+export default Point;

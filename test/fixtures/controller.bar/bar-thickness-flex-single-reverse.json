@@ -16,23 +16,22 @@
             "legend": false,
             "title": false,
             "scales": {
-                "xAxes": [{
+                "x": {
                     "type": "time",
                     "display": false,
+                    "offset": false,
                     "time": {
                         "parser": "YYYY"
                     },
+                    "reverse": true,
                     "ticks": {
-                        "source": "labels",
-                        "reverse": true
+                        "source": "labels"
                     }
-                }],
-                "yAxes": [{
+                },
+                "y": {
                     "display": false,
-                    "ticks": {
-                        "beginAtZero": true
-                    }
-                }]
+                    "beginAtZero": true
+                }
             }
         }
     },

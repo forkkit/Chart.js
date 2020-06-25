@@ -3,7 +3,7 @@ describe('Legend block tests', function() {
 	describe('auto', jasmine.fixture.specs('plugin.legend'));
 
 	it('should have the correct default config', function() {
-		expect(Chart.defaults.global.legend).toEqual({
+		expect(Chart.defaults.legend).toEqual({
 			display: true,
 			position: 'top',
 			align: 'center',
@@ -20,6 +20,12 @@ describe('Legend block tests', function() {
 				boxWidth: 40,
 				padding: 10,
 				generateLabels: jasmine.any(Function)
+			},
+
+			title: {
+				display: false,
+				position: 'center',
+				text: '',
 			}
 		});
 	});
@@ -149,7 +155,7 @@ describe('Legend block tests', function() {
 			datasetIndex: 1
 		}, {
 			text: 'dataset3',
-			fillStyle: 'rgba(0,0,0,0)',
+			fillStyle: 'rgba(0,0,0,0.1)',
 			hidden: false,
 			lineCap: 'butt',
 			lineDash: [],
@@ -198,7 +204,7 @@ describe('Legend block tests', function() {
 
 		expect(chart.legend.legendItems).toEqual([{
 			text: 'dataset3',
-			fillStyle: 'rgba(0,0,0,0)',
+			fillStyle: 'rgba(0,0,0,0.1)',
 			hidden: false,
 			lineCap: 'butt',
 			lineDash: [],
@@ -365,6 +371,37 @@ describe('Legend block tests', function() {
 		chart.legend.legendHitBoxes.forEach(function(item) {
 			expect(item.left + item.width).toBeLessThanOrEqual(chart.width);
 		});
+	});
+
+	it('should draw items with a custom boxHeight', function() {
+		var chart = window.acquireChart(
+			{
+				type: 'line',
+				data: {
+					datasets: [{
+						label: 'dataset1',
+						data: []
+					}],
+					labels: []
+				},
+				options: {
+					legend: {
+						position: 'right',
+						labels: {
+							boxHeight: 40
+						}
+					}
+				}
+			},
+			{
+				canvas: {
+					width: 512,
+					height: 105
+				}
+			}
+		);
+		const hitBox = chart.legend.legendHitBoxes[0];
+		expect(hitBox.height).toBe(40);
 	});
 
 	it('should pick up the first item when the property is an array', function() {
@@ -591,12 +628,12 @@ describe('Legend block tests', function() {
 			chart.options.legend = {};
 			chart.update();
 			expect(chart.legend).not.toBe(undefined);
-			expect(chart.legend.options).toEqual(jasmine.objectContaining(Chart.defaults.global.legend));
+			expect(chart.legend.options).toEqual(jasmine.objectContaining(Chart.defaults.legend));
 		});
 	});
 
 	describe('callbacks', function() {
-		it('should call onClick, onHover and onLeave at the correct times', function() {
+		it('should call onClick, onHover and onLeave at the correct times', function(done) {
 			var clickItem = null;
 			var hoverItem = null;
 			var leaveItem = null;
@@ -630,17 +667,22 @@ describe('Legend block tests', function() {
 				y: hb.top + (hb.height / 2)
 			};
 
+			afterEvent(chart, 'click', function() {
+				expect(clickItem).toBe(chart.legend.legendItems[0]);
+
+				afterEvent(chart, 'mousemove', function() {
+					expect(hoverItem).toBe(chart.legend.legendItems[0]);
+
+					afterEvent(chart, 'mousemove', function() {
+						expect(leaveItem).toBe(chart.legend.legendItems[0]);
+
+						done();
+					});
+					jasmine.triggerMouseEvent(chart, 'mousemove', chart.getDatasetMeta(0).data[0]);
+				});
+				jasmine.triggerMouseEvent(chart, 'mousemove', el);
+			});
 			jasmine.triggerMouseEvent(chart, 'click', el);
-
-			expect(clickItem).toBe(chart.legend.legendItems[0]);
-
-			jasmine.triggerMouseEvent(chart, 'mousemove', el);
-
-			expect(hoverItem).toBe(chart.legend.legendItems[0]);
-
-			jasmine.triggerMouseEvent(chart, 'mousemove', chart.getDatasetMeta(0).data[0]);
-
-			expect(leaveItem).toBe(chart.legend.legendItems[0]);
 		});
 	});
 });

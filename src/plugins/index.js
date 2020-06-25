@@ -1,6 +1,4 @@
-'use strict';
-
-module.exports = {};
-module.exports.filler = require('./plugin.filler');
-module.exports.legend = require('./plugin.legend');
-module.exports.title = require('./plugin.title');
+export {default as filler} from './plugin.filler';
+export {default as legend} from './plugin.legend';
+export {default as title} from './plugin.title';
+export {default as tooltip} from './plugin.tooltip';

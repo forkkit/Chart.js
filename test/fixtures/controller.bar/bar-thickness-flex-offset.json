@@ -16,7 +16,7 @@
             "legend": false,
             "title": false,
             "scales": {
-                "xAxes": [{
+                "x": {
                     "type": "time",
                     "offset": true,
                     "display": false,
@@ -26,13 +26,11 @@
                     "ticks": {
                         "source": "labels"
                     }
-                }],
-                "yAxes": [{
+                },
+                "y": {
                     "display": false,
-                    "ticks": {
-                        "beginAtZero": true
-                    }
-                }]
+                    "beginAtZero": true
+                }
             }
         }
     },
